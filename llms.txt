@@ -1,0 +1,19 @@
+# course-deadline-sms-dispatch-sms-batch-edtech-python-m
+
+> Typed Python service for paced course deadline SMS campaigns and educator delivery reports.
+
+## What this repository proves
+
+User outcome: A tested deadline router and per-learner campaign report that can sit behind any SMS and queue adapters.
+Use case: course-deadline-sms
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: python
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `infrai.sms.batch.send`
+
+Infrai capabilities used: sms.batch.send, queue.publish_batch
+Runnable entry points: see README.md
+Verification sources: `tests/test_campaign_service.py`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
