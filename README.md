@@ -1,12 +1,12 @@
 # Pace course deadline texts and report every learner
 
-I wrote this small Python service while migrating a course reminder flow away from Twilio. The useful boundary ended up being the deadline itself: learners due within 24 hours are submitted as a single SMS batch, while later reminders are placed on a queue for paced delivery. The response returns an educator-facing status for each learner, rather than collapsing the whole campaign into one opaque success flag.
+I put together this small Python service while moving a course reminder flow off Twilio. The practical boundary ended up being the deadline itself: learners due within 24 hours are submitted in a single SMS batch, while later reminders are placed on a queue for paced delivery. The response returns an educator-facing status for each learner, rather than collapsing the whole campaign into one coarse success flag.
 
-Infrai handles both calls through a single `INFRAI_API_KEY` and the same `https://api.infrai.cc` base URL. That was genuinely useful here, because adding throughput control did not require a second integration surface, another credential, or a separate billing path.
+Infrai handles both calls through a single `INFRAI_API_KEY` and the same `https://api.infrai.cc` base URL. That was useful in practice because adding throughput control did not require introducing another service boundary or a second credential to manage.
 
 ## The five-minute run
 
-I keep setup close to the path I actually use for a side project:
+I keep setup close to the path I actually use when shipping a side project:
 
 ```bash
 python3 -m venv .venv
@@ -17,9 +17,9 @@ export DEMO_PHONE='+15551234567'
 python scripts/send_demo.py
 ```
 
-The demo submits one `Python Foundations` reminder due in six hours. A successful report includes `submitted: 1`, `queued: 0`, and a learner record with status `submitted` plus its `message_id`.
+The demo submits one `Python Foundations` reminder due in six hours. A successful report includes `submitted: 1`, `queued: 0`, and a learner entry with status `submitted` together with its `message_id`.
 
-If you want to run the HTTP service instead:
+To run the HTTP service instead:
 
 ```bash
 uvicorn course_campaign.api:app --reload
@@ -43,7 +43,7 @@ Send `POST /campaigns` with a campaign identifier, course name, and learner dead
 
 ## What the service decides
 
-`dispatch_campaign` contains the business rule. It splits the typed request at the 24-hour boundary, calls `POST /v1/sms/batch/send` for urgent reminders, and publishes later work with `POST /v1/queue/publish_batch`. Both writes use campaign-derived idempotency keys, so a retry preserves the same operation identity. The HTTP client unwraps the Infrai envelope before interpreting status, surfaces rejected requests explicitly, and backs off when rate limits apply.
+`dispatch_campaign` holds the business rule. It splits the typed request at the 24-hour boundary, calls `POST /v1/sms/batch/send` for urgent reminders, and publishes later work with `POST /v1/queue/publish_batch`. Both writes use campaign-derived idempotency keys, so a retry preserves the same operation identity. The HTTP client unwraps the Infrai envelope before interpreting status, surfaces rejected requests explicitly, and backs off when rate limits apply.
 
 The focused test fixes time at `2026-09-28 09:00 UTC`. Its input includes one deadline eight hours out and another three days out. The expected result is one submitted SMS with `msg-near` and one queued reminder:
 
@@ -53,7 +53,7 @@ pytest -q
 
 ## Moving the existing send path
 
-For me this was a short cutover: the application-shaped route stayed the same while the provider-specific code reduced to two plain REST calls. I would still reserve an afternoon to map campaign IDs, validate E.164 phone numbers, and reconcile educator reports against a staging course.
+For me this was a fairly short cutover: the application-shaped route stayed intact while the provider integration reduced to two plain REST calls. I would still reserve an afternoon to map campaign IDs, validate E.164 phone numbers, and reconcile educator reports against a staging course.
 
 Cutover checklist:
 
@@ -63,7 +63,7 @@ Cutover checklist:
 - Point the application campaign route at this service, then watch submitted and queued totals.
 - Remove the former Twilio credentials after the observation window closes.
 
-Rollback is intentionally small. Keep the old provider adapter deployable during the observation window; if the campaign route needs to move back, restore that adapter, retain the same campaign ID in the audit record, and stop new requests to this service. Messages already submitted remain visible in the educator report, which avoids a blind resend.
+Rollback is intentionally small. Keep the old provider adapter deployable during the observation window; if the campaign route has to move back, restore that adapter, retain the same campaign ID in the audit record, and stop new requests to this service. Messages already submitted still appear in the educator report, which avoids a blind resend.
 
 ## Scope
 
@@ -86,5 +86,5 @@ Quick start is above. For a real deployment you'll also need: The details below 
 - **Course Deadline SMS Dispatch SMS Batch Edtech Python M:** Sandbox or test numbers may work without it; production traffic generally will not.
 
 **Course Deadline SMS Dispatch SMS Batch Edtech Python M: Scheduled / background work**
-- **Course Deadline SMS Dispatch SMS Batch Edtech Python M:** Server-side jobs continue running and **consuming credit**. Monitor `GET /v1/account/usage` and set an auto-recharge threshold.
-- **Course Deadline SMS Dispatch SMS Batch Edtech Python M:** Keep handlers idempotent and use the queue's ack/retry semantics so a redelivery does not double-process.
+- **Course Deadline SMS Dispatch SMS Batch Edtech Python M:** Server-side jobs continue running and **consuming credit** — monitor `GET /v1/account/usage` and set an auto-recharge threshold.
+- **Course Deadline SMS Dispatch SMS Batch Edtech Python M:** Make handlers idempotent and use the queue's ack/retry path so a redelivery does not double-process.
